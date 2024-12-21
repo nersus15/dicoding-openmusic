@@ -25,33 +25,50 @@ const SongsValidator = require('./validator/songs');
     await server.register([
        {
         plugin: albums,
-        option: {
+        options: {
             service: albumService,
             validator: AlbumsValidator
         }
        },
        {
         plugin: songs,
-        option: {
+        options: {
             service: songsService,
             validator: SongsValidator
         }
        } 
     ]);
+
     // Add Extension Here
     server.ext('onPreResponse', (request, h) => {
         const {response} = request;
 
-        if(response instanceof ClientError){
+        if(response instanceof Error){
+            if(response instanceof ClientError){
+                const r = h.response({
+                    status: 'fail',
+                    message: response.message
+                });
+    
+                r.code(response.statusCode);
+                return r;
+            }
+            if (!response.isServer) {
+                return h.continue;
+            }
+
             const r = h.response({
-                status: 'fail',
-                message: response.message
+                status: 'error',
+                message: "Kami mengalami kegagalan server",
+                error: response.message
             });
 
-            r.code(response.statusCode);
+            r.code(500);
             return r;
+            
+    
         }
-
+        
         return h.continue;
     });
 
